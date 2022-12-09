@@ -25,19 +25,6 @@
 #include "mqtt.h"
 #include "gpio_main.h"
 
-//#undef ESP_ERROR_CHECK
-//#define ESP_ERROR_CHECK(x)   do { esp_err_t _err_rc = (x); if (_err_rc != ESP_OK) { ESP_LOGE("err", "esp_err_t = %d", _err_rc); assert(0 && #x);} } while(0);
-
-static EventGroupHandle_t wifi_app_event_group;
-
-
-const int WIFI_CONNECTING_USING_SAVED_CREDS_BIT = BIT0;
-const int WIFI_CONNECTING_FROM_SMARTCONFIG = BIT1;
-const int WIFI_USER_CLEAR_SETTINGS = BIT2;
-
-
-
-static const char TAG[] = "wifi_app";
 
 wifi_config_t *wifi_config = NULL;
 mqtt_topic_t *mqtt = NULL;
@@ -61,6 +48,7 @@ static void wifi_app_event_handler(void* event_handler_arg, esp_event_base_t eve
 			if (message_sent == pdTRUE){
 				printf("MESSAGE SENT SUCCESSFULLY 62");
 			}
+				//MESSAGE IS RECEIVED BY xQUEUERECEIVE ON GPIO.C
 			break;
 
 		case WIFI_EVENT_STA_CONNECTED:
@@ -70,21 +58,7 @@ static void wifi_app_event_handler(void* event_handler_arg, esp_event_base_t eve
 
 		case WIFI_EVENT_STA_DISCONNECTED:
 			ESP_LOGI(TAG, "WIFI_EVENT_STA_DISCONNECTED");
-//			wifi_event_sta_disconnected_t *sta_disconnected = (wifi_event_sta_disconnected_t*)malloc(sizeof(wifi_event_sta_disconnected_t));
-//			*sta_disconnected = *((wifi_event_sta_disconnected_t)event_data);
-			if(global_retry < MAX_CONNECTION_RETRIES)
-			{
-				esp_wifi_connect();
-				global_retry++;
-				printf("TRYING TO CONNECT %d", global_retry);
-			}
-			else
-			{
-				ESP_LOGI(TAG, "ATTEMPTING SMARTCONFIG");
-				wifi_app_send_message(WIFI_CANNOT_CONNECT);
-				//start_sc();
-			}
-			//ESP_LOGI(TAG, "WIFI_EVENT_STA_DISCONNECTED");
+//			//Code Snipped for better readability
 			break;
 
 		case WIFI_EVENT_STA_STOP:
@@ -112,29 +86,13 @@ static void wifi_app_event_handler(void* event_handler_arg, esp_event_base_t eve
 //Initializes the wifi application event handler for wifi and ip events
 static void wifi_app_event_handler_init(void){
 
-	//Event loop for Wifi driver
-	//ESP_ERROR_CHECK(esp_event_loop_create_default());
-
-	//Event handler for the connection
-//	esp_event_handler_t wifi_event;
-//	esp_event_handler_t ip_event;
-
-	ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_app_event_handler, NULL));
-	ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, &wifi_app_event_handler, NULL));
+//Code Snipped for better readability
 
 }
 
 static void wifi_app_event_handler_init_saved_credentials(void){
 
-	//Event loop for Wifi driver
-	ESP_ERROR_CHECK(esp_event_loop_create_default());
-
-	//Event handler for the connection
-//	esp_event_handler_t wifi_event;
-//	esp_event_handler_t ip_event;
-
-	ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_app_event_handler, NULL));
-	ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, &wifi_app_event_handler, NULL));
+//Code Snipped for better readability
 
 }
 
@@ -154,16 +112,6 @@ static void wifi_app_default_wifi_init(void)
 	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 	esp_wifi_set_mode(WIFI_MODE_STA);
-
-
-//	tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_STA);
-//
-//	tcpip_adapter_ip_info_t server_info;
-//	//memset(&server_info, 0, sizeof(server_info));
-//	IP4_ADDR(&server_info.ip, 192,168,1,199);
-//	IP4_ADDR(&server_info.netmask, 255,255,255,0);
-//	IP4_ADDR(&server_info.gw, 192,168,1,1);
-//	tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_STA, &server_info);
 
 }
 
@@ -191,36 +139,7 @@ wifi_config_t*  get_wifi_config(void)
 static void wifi_app_connect_sta(void)
 {
 
-	tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_STA);
-
-	tcpip_adapter_ip_info_t server_info;
-	//memset(&server_info, 0, sizeof(server_info));
-	IP4_ADDR(&server_info.ip, 192,168,1,199);
-	IP4_ADDR(&server_info.netmask, 255,255,255,0);
-	IP4_ADDR(&server_info.gw, 192,168,1,1);
-	tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_STA, &server_info);
-	//ESP_LOGI(TAG, "LINE 147 WIFI_APP.c");
-	ESP_LOGI(TAG, &wifi_config->sta.ssid);
-	ESP_LOGI(TAG, &wifi_config->sta.password);
-
-	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, get_wifi_config()));
-	//ESP_ERROR_CHECK(esp_wifi_connect());
-	esp_err_t connect_result = esp_wifi_connect();
-	if (connect_result == ESP_OK)
-	{
-		if (load_mqtt_topic())
-		{
-
-			mqtt_main();
-		}
-		else
-		{
-			wifi_app_send_message(WIFI_SERVER_START);
-		}
-
-//		wifi_app_send_message(WIFI_APP_STA_CONNECTED);
-
-	}
+//Code Snipped for better readability
 }
 
 
@@ -254,42 +173,7 @@ static void wifi_app_task(void *pvParameters)
 			case WIFI_LOAD_SAVED_CREDENTIALS:
 				ESP_LOGI(TAG, "LOAD SAVED CREDENTIALS");
 
-				if (app_nvs_load_sta_creds())
-				{
-
-					ESP_LOGI(TAG, "Credentials Loaded");
-					xEventGroupSetBits(wifi_app_event_group, WIFI_CONNECTING_USING_SAVED_CREDS_BIT);
-					wifi_app_event_handler_init_saved_credentials();
-
-					//Initialize the tcpip stack
-					wifi_app_default_wifi_init();
-
-					//Start Wifi
-					ESP_ERROR_CHECK(esp_wifi_start());
-
-					//Attempt connection
-					wifi_app_connect_sta();
-
-					//set number of retries to 0
-					global_retry = 0;
-					wifi_app_send_message(WIFI_APP_STA_CONNECTED);
-//					wifi_app_send_message(WIFI_APP_WIFI_READY);
-
-					if (load_mqtt_topic()){
-						bool topic_found = load_mqtt_topic();
-						ESP_LOGI(TAG, "MQTT TOPIC FOUND");
-					}
-				}
-
-				else
-				{
-					ESP_LOGI(TAG, "No Credentials Found");
-
-//					create_led_blink_tasks();
-//					led_send_message(LED_BLINK_SLOW_START);
-					start_sc();
-				}
-				//wifi_app_send_message(WIFI_SERVER_START);
+				//Code Snipped for better readability
 				break;
 
 			case WIFI_CONNECTED_VIA_SMARTCONFIG:
@@ -310,75 +194,10 @@ static void wifi_app_task(void *pvParameters)
 				if (message_sent2 == pdTRUE){
 					printf("MESSAGE SENT SUCCESSFULLY 311");
 				}
-				eventBits = xEventGroupGetBits(wifi_app_event_group);
-
-
-
-				if (eventBits & WIFI_CONNECTING_USING_SAVED_CREDS_BIT)
-				{
-					xEventGroupClearBits(wifi_app_event_group, WIFI_CONNECTING_USING_SAVED_CREDS_BIT);
-				}
-
-				else
-				{
-					app_nvs_save_sta_creds();
-				}
-
-				if (eventBits & WIFI_CONNECTING_FROM_SMARTCONFIG)
-				{
-					xEventGroupClearBits(wifi_app_event_group, WIFI_CONNECTING_FROM_SMARTCONFIG);
-				}
+					//THIS MESSAGE IS NOT RECEIVED BY xQUEUERECEIVE ON GPIO.C EVEN THOUGH PRINT STATEMENT IS PRINTED ON CONSOLE
 				break;
 
-			case WIFI_APP_WIFI_READY:
-				ESP_LOGI(TAG, "189 WIFI_APP_WIFI_READY");
-
-				xEventGroupSetBits(wifi_app_event_group, WIFI_CONNECTING_FROM_SMARTCONFIG);
-				//set_blink_duration(500);
-				wifi_app_event_handler_init();
-
-				//Initialize the tcpip stack
-				wifi_app_default_wifi_init();
-
-				//Start Wifi
-				ESP_ERROR_CHECK(esp_wifi_start());
-
-				//Attempt connection
-				wifi_app_connect_sta();
-
-				//set number of retries to 0
-				global_retry = 0;
-				wifi_app_send_message(WIFI_APP_STA_CONNECTED);
-				//tell server about the connection attempt
-				//http_server_send_message(HTTP_MSG_WIFI_CONNECT_INIT);
-				break;
-
-			case WIFI_APP_STA_DISCONNECTED:
-				ESP_LOGI(TAG, "WIFI_APP_STA_DISCONNECTED");
-				eventBits = xEventGroupGetBits(wifi_app_event_group);
-				if(eventBits & WIFI_CONNECTING_USING_SAVED_CREDS_BIT)
-				{
-					ESP_LOGI(TAG, "DISCONNECT : Attempt using saved creds");
-					xEventGroupClearBits(wifi_app_queue_handle, WIFI_CONNECTING_USING_SAVED_CREDS_BIT);
-					clear_sta_creds();
-				}
-				else if (eventBits & WIFI_CONNECTING_FROM_SMARTCONFIG)
-				{
-					ESP_LOGI(TAG, "Disconnect : Attempt from Smart Config");
-					xEventGroupClearBits(wifi_app_event_group, WIFI_CONNECTING_FROM_SMARTCONFIG);
-					start_sc();
-
-				}
-				break;
-
-			case WIFI_APP_USER_CLEAR_SETTINGS:
-					ESP_LOGI(TAG, "USER CLEAR SETTINGS");
-					global_retry = MAX_CONNECTION_RETRIES;
-					ESP_ERROR_CHECK(esp_wifi_disconnect());
-					clear_sta_creds();
-					start_sc();
-					break;
-
+		
 			case IP_APP_STA_GOT_IP:
 				ESP_LOGI(TAG, "IP_APP_STA_GOT_IP");
 //				http_server_send_message(HTTP_MSG_WIFI_CONNECT_SUCCESS);
@@ -420,9 +239,6 @@ void wifi_app_start(void)
 
 	//START WIFI APPLICATION
 	xTaskCreate(&wifi_app_task, "wifi_app_task", 4096, NULL, 5, NULL);
-
-
-
 
 
 
