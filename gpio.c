@@ -24,11 +24,9 @@
 #include "mqtt.h"
 
 static QueueHandle_t led_queue_handle;
-static EventGroupHandle_t led_event_group;
 static TaskHandle_t led_task_handle = NULL;
 static const char *TAG = "GPIO";
 
-static xQueueHandle gpio_evt_queue = NULL;
 static bool is_task_suspended = false;
 
 
@@ -48,16 +46,6 @@ BaseType_t led_send_message(led_messages_e led_msgID)
 
 
 
-//static void gpio_task_example(void *arg)
-//{
-//    uint32_t io_num;
-//
-//    for (;;) {
-//        if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
-//            ESP_LOGI(TAG, "GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(io_num));
-//        }
-//    }
-//}
 
 void set_led_state(bool arg){
 	led_blink_state = arg;
@@ -107,9 +95,7 @@ void led_task(void){
 				switch(msg.led_message)
 				{
 				case LED_BLINK_SLOW_START:
-//					if(!is_task_suspended){
-//						resume_led_task();
-//					}
+
 					ESP_LOGI(TAG, "LED_BLINK_SLOW_START");
 					led_blink_function(1000);
 					xQueueReset(led_queue_handle);
@@ -119,29 +105,27 @@ void led_task(void){
 					ESP_LOGI(TAG, "LED_BLINK_SLOW_STOP");
 					suspend_led_task();
 
-//					xQueueReset(led_queue_handle);
+
 					break;
 
 				case LED_BLINK_FAST_START:
-//					if(!is_task_suspended){
-//						resume_led_task();
-//					}
+
 					ESP_LOGI(TAG, "LED_BLINK_FAST_START");
 					led_blink_function(1000);
-//					xQueueReset(led_queue_handle);
+
 					break;
 
 				case LED_BLINK_FAST_STOP:
 					ESP_LOGI(TAG, "LED_BLINK_FAST_STOP");
 					led_blink_function(2000);
 					suspend_led_task();
-//					xQueueReset(led_queue_handle);
+
 					break;
 
 				case LED_BLINK_STOP:
 					ESP_LOGI(TAG, "LED_BLINK_STOP");
 					suspend_led_task();
-//					xQueueReset(led_queue_handle);
+
 					break;
 
 				default:
@@ -171,85 +155,13 @@ void gpio_main(void)
     gpio_set_level(RELAY, 0);
     gpio_set_level(LED, 0);
 
-    //create a queue to handle gpio event from isr
-    gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
-    //start gpio task
-//    xTaskCreate(gpio_task_example, "gpio_task_example", 2048, NULL, 10, NULL);
-
     led_queue_handle = xQueueCreate(5,sizeof(led_queue_message_t));
-    led_event_group = xEventGroupCreate();
 
     xTaskCreate(&led_task, "led_task", 4096, NULL, 5, &led_task_handle);
 
-    //led_send_message(LED_BLINK_SLOW_START);
 
 }
 
-void switchRelaybyButton()
-{
-	switch(relayState) {
-
-	case 1 :
-		printf("BTN CURRENT RELAY LEVEL is %d", relayState);
-		printf("BTN CURRENT LED LEVEL is %d", ledState);
-		gpio_set_level(RELAY, 0);
-		gpio_set_level(LED, 1);
-		relayState = 0;
-		ledState = 1;
-		mqtt_publish("false");
-		printf("BTN New RELAY LEVEL is %d", relayState);
-		printf("BTN New LED LEVEL is %d", ledState);
-		break;
-
-	case 0 :
-		printf("BTN CURRENT RELAY LEVEL is %d", relayState);
-		printf("BTN CURRENT LED LEVEL is %d", ledState);
-		gpio_set_level(RELAY, 1);
-		gpio_set_level(LED, 0);
-		relayState = 1;
-		ledState = 0;
-		mqtt_publish("true");
-		printf("BTN New RELAY LEVEL is %d", relayState);
-		printf("BTN New LED LEVEL is %d", ledState);
-		break;
-
-	default :
-		break;
-
-	}
-
-
-}
-
-void switchRelaybyMqtt(char data[])
-{
-
-	printf("MQTT SWITCH RELAY : DATA is %s", data);
-	if(strcmp(data, "true") == 0)
-	{
-		printf("CURRENT RELAY LEVEL is %d", gpio_get_level(RELAY));
-		printf("CURRENT LED LEVEL is %d", gpio_get_level(LED));
-		ESP_LOGI(TAG, "Switching on Relay & LED");
-		gpio_set_level(RELAY, 1);
-		gpio_set_level(LED, 0);
-		printf("NEW RELAY LEVEL is %d", gpio_get_level(RELAY));
-		printf("NEW LED LEVEL is %d", gpio_get_level(LED));
-	}
-
-	else if(strcmp(data, "false") == 0)
-
-	{
-		printf("CURRENT RELAY LEVEL is %d", gpio_get_level(RELAY));
-		printf("CURRENT LED LEVEL is %d", gpio_get_level(LED));
-		ESP_LOGI(TAG, "Switching OFF Relay & LED");
-		gpio_set_level(RELAY, 0);
-		gpio_set_level(LED, 1);
-		printf("NEW RELAY LEVEL is %d", gpio_get_level(RELAY));
-		printf("NEW LED LEVEL is %d", gpio_get_level(LED));
-
-	}
-
-}
 
 
 
